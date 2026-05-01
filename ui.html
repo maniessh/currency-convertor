@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0B0E11">
+<meta name="description" content="ForexPulse — Professional Currency Converter">
+<title>ForexPulse — Currency Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0B0E11;
+  --bg2: #131720;
+  --bg3: #1a2030;
+  --bg4: #202840;
+  --gold: #F0B90B;
+  --gold2: #d4a009;
+  --cyan: #00C8FF;
+  --cyan2: #00a8d4;
+  --green: #0ECB81;
+  --red: #F6465D;
+  --text: #EAECEF;
+  --text2: #848E9C;
+  --text3: #5a6478;
+  --border: rgba(255,255,255,0.07);
+  --glow-gold: 0 0 20px rgba(240,185,11,0.3);
+  --glow-cyan: 0 0 20px rgba(0,200,255,0.3);
+  --radius: 12px;
+  --radius-lg: 20px;
+  --font: 'Sora', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+ 
+/* ---- SCROLLBAR ---- */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+ 
+/* ---- NOISE OVERLAY ---- */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");opacity:.4;pointer-events:none;z-index:0}
+ 
+/* ---- TOPNAV ---- */
+.topnav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;background:rgba(11,14,17,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;letter-spacing:-0.02em}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),var(--cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo span{color:var(--gold)}
+.logo em{color:var(--text2);font-style:normal;font-weight:300}
+.nav-links{display:flex;gap:4px}
+.nav-link{padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.85rem;color:var(--text2);transition:all .2s;border:none;background:transparent;font-family:var(--font)}
+.nav-link:hover{color:var(--text);background:var(--bg3)}
+.nav-link.active{color:var(--gold);background:rgba(240,185,11,0.1)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.live-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:rgba(14,203,129,0.1);border:1px solid rgba(14,203,129,0.2);font-size:.75rem;color:var(--green);font-family:var(--mono)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px}
+.hamburger span{display:block;width:22px;height:2px;background:var(--text2);border-radius:2px;transition:all .3s}
+.hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+.mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:rgba(11,14,17,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);z-index:99;padding:12px;flex-direction:column;gap:4px}
+.mobile-menu.open{display:flex}
+ 
+/* ---- LAYOUT ---- */
+.app{display:flex;min-height:calc(100vh - 60px)}
+.sidebar{width:220px;flex-shrink:0;padding:20px 12px;border-right:1px solid var(--border);position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+.sidebar-section{margin-bottom:24px}
+.sidebar-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:8px;padding:0 8px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:8px;cursor:pointer;font-size:.85rem;color:var(--text2);transition:all .2s;border:none;background:transparent;width:100%;text-align:left;font-family:var(--font)}
+.sidebar-item:hover{color:var(--text);background:var(--bg3)}
+.sidebar-item.active{color:var(--gold);background:rgba(240,185,11,0.08);font-weight:600}
+.sidebar-item .icon{font-size:1rem;width:20px;text-align:center}
+.main{flex:1;padding:24px;overflow-x:hidden}
+ 
+/* ---- SECTIONS ---- */
+.section{display:none;animation:fadeIn .3s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+ 
+/* ---- CARDS ---- */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;position:relative;overflow:hidden;transition:all .3s}
+.card:hover{border-color:rgba(255,255,255,0.12);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.card-glow-gold{box-shadow:inset 0 0 60px rgba(240,185,11,0.03)}
+.card-glow-cyan{box-shadow:inset 0 0 60px rgba(0,200,255,0.03)}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:6px}
+.card .subtitle{font-size:.8rem;color:var(--text2);margin-bottom:20px}
+ 
+/* ---- CONVERTER SECTION ---- */
+.converter-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.input-group{display:flex;flex-direction:column;gap:8px}
+.input-label{font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.currency-input-wrap{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .2s}
+.currency-input-wrap:focus-within{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,185,11,0.15)}
+.currency-select{background:transparent;border:none;border-right:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:.9rem;padding:14px 12px;cursor:pointer;outline:none;min-width:130px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23848E9C'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:calc(100% - 10px) center;padding-right:28px}
+.currency-select option{background:var(--bg3);color:var(--text)}
+.amount-input{flex:1;background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:1.1rem;padding:14px 16px;outline:none;width:100%}
+.amount-input::placeholder{color:var(--text3)}
+.swap-btn{width:100%;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;color:var(--text2);font-size:1.2rem;transition:all .2s;font-family:var(--font)}
+.swap-btn:hover{background:rgba(240,185,11,0.1);border-color:var(--gold);color:var(--gold);transform:rotate(180deg)}
+.convert-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),#e8a800);border:none;border-radius:var(--radius);cursor:pointer;color:#0B0E11;font-family:var(--font);font-weight:700;font-size:1rem;transition:all .2s;letter-spacing:.02em}
+.convert-btn:hover{transform:translateY(-1px);box-shadow:var(--glow-gold)}
+.convert-btn:active{transform:translateY(0)}
+.result-display{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center;margin-top:16px}
+.result-amount{font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--gold);letter-spacing:-.02em}
+.result-rate{font-size:.82rem;color:var(--text2);margin-top:6px}
+.result-time{font-size:.72rem;color:var(--text3);margin-top:4px}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(240,185,11,0.3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+ 
+/* ---- RATE LABEL ---- */
+.rate-label{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:rgba(0,200,255,0.05);border:1px solid rgba(0,200,255,0.15);border-radius:8px;margin-top:12px;font-size:.85rem;color:var(--cyan);font-family:var(--mono)}
+ 
+/* ---- MULTI CONVERTER ---- */
+.multi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:16px}
+.multi-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:all .2s}
+.multi-card:hover{border-color:rgba(240,185,11,0.3);background:var(--bg4)}
+.multi-flag{font-size:1.4rem;margin-bottom:6px}
+.multi-currency{font-size:.75rem;color:var(--text2);margin-bottom:4px}
+.multi-amount{font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--text)}
+.multi-name{font-size:.72rem;color:var(--text3);margin-top:2px}
+ 
+/* ---- CHART SECTION ---- */
+.chart-controls{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.period-btn{padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:.8rem;font-family:var(--font);transition:all .2s}
+.period-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
+.period-btn.active{background:rgba(240,185,11,0.15);border-color:var(--gold);color:var(--gold)}
+.chart-wrap{position:relative;height:280px;margin-top:8px}
+.chart-pair-selector{display:flex;gap:8px;align-items:center;flex:1;min-width:200px}
+.chart-pair-selector select{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-family:var(--font);font-size:.85rem;outline:none;cursor:pointer}
+.chart-pair-selector span{color:var(--text3);font-size:.85rem}
+.chart-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.chart-stat{background:var(--bg3);border-radius:8px;padding:12px;text-align:center}
+.chart-stat-label{font-size:.72rem;color:var(--text2);margin-bottom:4px}
+.chart-stat-val{font-family:var(--mono);font-size:.95rem;font-weight:600}
+.chart-stat-val.up{color:var(--green)}
+.chart-stat-val.down{color:var(--red)}
+ 
+/* ---- ALERTS ---- */
+.alert-form{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:16px}
+.alert-input-wrap{display:flex;flex-direction:column;gap:6px}
+.alert-input-wrap label{font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.alert-input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;color:var(--text);font-family:var(--mono);font-size:.95rem;outline:none;transition:all .2s}
+.alert-input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,200,255,0.1)}
+.add-alert-btn{padding:13px 20px;background:linear-gradient(135deg,var(--cyan),var(--cyan2));border:none;border-radius:var(--radius);cursor:pointer;color:#0B0E11;font-weight:700;font-size:.9rem;font-family:var(--font);white-space:nowrap;transition:all .2s}
+.add-alert-btn:hover{box-shadow:var(--glow-cyan);transform:translateY(-1px)}
+.alerts-list{display:flex;flex-direction:column;gap:8px}
+.alert-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.alert-item.triggered{border-color:var(--green);background:rgba(14,203,129,0.05)}
+.alert-info{display:flex;flex-direction:column;gap:3px}
+.alert-pair{font-size:.9rem;font-weight:600}
+.alert-target{font-size:.8rem;color:var(--text2);font-family:var(--mono)}
+.alert-status{font-size:.72rem;padding:3px 8px;border-radius:10px}
+.alert-status.watching{background:rgba(0,200,255,0.1);color:var(--cyan)}
+.alert-status.triggered-badge{background:rgba(14,203,129,0.1);color:var(--green)}
+.delete-alert{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:1rem;padding:4px 8px;border-radius:4px;transition:all .2s;font-family:var(--font)}
+.delete-alert:hover{color:var(--red);background:rgba(246,70,93,0.1)}
+ 
+/* ---- FAVORITES ---- */
+.fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:16px}
+.fav-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all .2s;position:relative}
+.fav-card:hover{border-color:rgba(240,185,11,0.3);transform:translateY(-2px)}
+.fav-star{position:absolute;top:10px;right:12px;cursor:pointer;font-size:1rem;transition:all .2s}
+.fav-star.active{color:var(--gold)}
+.fav-star:not(.active){color:var(--text3)}
+.fav-flag{font-size:1.5rem}
+.fav-code{font-family:var(--mono);font-weight:700;font-size:1rem}
+.fav-rate{font-size:.8rem;color:var(--text2);font-family:var(--mono)}
+.fav-change{font-size:.75rem}
+.fav-change.up{color:var(--green)}
+.fav-change.down{color:var(--red)}
+.all-currencies{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;max-height:300px;overflow-y:auto;margin-top:12px}
+.curr-option{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);font-size:.82rem;transition:all .2s}
+.curr-option:hover{border-color:rgba(240,185,11,0.3);background:var(--bg4)}
+.curr-option.starred{border-color:rgba(240,185,11,0.4);background:rgba(240,185,11,0.05)}
+ 
+/* ---- LEARN SECTION ---- */
+.learn-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--bg3);padding:4px;border-radius:10px;overflow-x:auto}
+.learn-tab{padding:9px 16px;border-radius:7px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:.85rem;white-space:nowrap;font-family:var(--font);transition:all .2s}
+.learn-tab.active{background:var(--bg4);color:var(--gold);font-weight:600}
+.learn-panel{display:none}
+.learn-panel.active{display:block;animation:fadeIn .3s ease}
+ 
+/* Currency facts */
+.facts-select-wrap{display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.facts-select-wrap select{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-family:var(--font);font-size:.9rem;outline:none;cursor:pointer;flex:1;min-width:140px}
+.fact-card{background:linear-gradient(135deg,var(--bg3),var(--bg4));border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px}
+.fact-flag{font-size:3rem;margin-bottom:12px}
+.fact-name{font-size:1.4rem;font-weight:700;margin-bottom:4px}
+.fact-country{color:var(--text2);margin-bottom:16px}
+.fact-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.fact-item{background:var(--bg);border-radius:8px;padding:12px}
+.fact-item-label{font-size:.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.fact-item-val{font-weight:600;font-family:var(--mono)}
+.fun-fact{margin-top:16px;padding:16px;background:rgba(240,185,11,0.06);border:1px solid rgba(240,185,11,0.15);border-radius:var(--radius);font-size:.88rem;color:var(--text2);line-height:1.6}
+.fun-fact::before{content:'💡  ';font-style:normal}
+ 
+/* Strength index */
+.strength-grid{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.strength-row{display:flex;align-items:center;gap:12px}
+.strength-flag-code{display:flex;align-items:center;gap:8px;min-width:80px;font-size:.85rem;font-family:var(--mono);font-weight:600}
+.strength-bar-wrap{flex:1;height:10px;background:var(--bg3);border-radius:10px;overflow:hidden}
+.strength-bar{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--cyan),var(--gold));transition:width 1s cubic-bezier(.4,0,.2,1)}
+.strength-val{min-width:60px;text-align:right;font-size:.82rem;font-family:var(--mono);color:var(--text2)}
+ 
+/* Did you know carousel */
+.carousel-wrap{position:relative;overflow:hidden;min-height:120px}
+.carousel-slides{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.carousel-slide{min-width:100%;padding:24px;background:var(--bg3);border-radius:var(--radius);font-size:.95rem;line-height:1.7;color:var(--text)}
+.carousel-slide::before{content:'🌍  ';font-style:normal}
+.carousel-dots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.carousel-dot{width:6px;height:6px;border-radius:50%;background:var(--bg4);cursor:pointer;transition:all .3s;border:none}
+.carousel-dot.active{background:var(--gold);width:16px;border-radius:3px}
+.carousel-nav{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.carousel-nav button{background:var(--bg3);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;cursor:pointer;color:var(--text2);font-size:.85rem;transition:all .2s;font-family:var(--font)}
+.carousel-nav button:hover{border-color:var(--gold);color:var(--gold)}
+ 
+/* Glossary */
+.glossary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.glossary-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:all .2s}
+.glossary-card:hover{border-color:rgba(0,200,255,0.3);transform:translateY(-1px)}
+.glossary-term{font-weight:700;font-size:.95rem;color:var(--cyan);margin-bottom:6px}
+.glossary-def{font-size:.83rem;color:var(--text2);line-height:1.6}
+ 
+/* ---- TOAST ---- */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:14px 18px;border-radius:var(--radius);font-size:.85rem;display:flex;align-items:center;gap:10px;animation:slideUp .3s ease;box-shadow:0 8px 24px rgba(0,0,0,0.4);max-width:320px}
+.toast.success{background:rgba(14,203,129,0.15);border:1px solid rgba(14,203,129,0.4);color:var(--green)}
+.toast.info{background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.3);color:var(--cyan)}
+.toast.warning{background:rgba(240,185,11,0.1);border:1px solid rgba(240,185,11,0.3);color:var(--gold)}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-8px)}}
+.toast.hiding{animation:slideOut .3s ease forwards}
+ 
+/* ---- SECTION HEADER ---- */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.section-title{font-size:1.2rem;font-weight:700}
+.section-title span{color:var(--gold)}
+ 
+/* ---- ERROR CARD ---- */
+.error-card{background:rgba(246,70,93,0.06);border:1px solid rgba(246,70,93,0.2);border-radius:var(--radius);padding:16px;color:var(--red);font-size:.85rem;display:flex;align-items:center;gap:10px}
+ 
+/* ---- DIVIDER ---- */
+.divider{height:1px;background:var(--border);margin:20px 0}
+ 
+/* ---- NUMBER ANIMATION ---- */
+@keyframes countUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.count-anim{animation:countUp .4s ease}
+ 
+/* ---- RESPONSIVE ---- */
+@media(max-width:1100px){.sidebar{width:180px}}
+@media(max-width:900px){
+  .sidebar{display:none}
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .main{padding:16px}
+  .converter-grid{grid-template-columns:1fr}
+  .alert-form{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+  .add-alert-btn{grid-column:1/-1}
+  .chart-stats{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:600px){
+  .topnav{padding:0 16px}
+  .multi-grid{grid-template-columns:repeat(2,1fr)}
+  .chart-stats{grid-template-columns:repeat(3,1fr)}
+  .fact-grid{grid-template-columns:1fr}
+  .glossary-grid{grid-template-columns:1fr}
+  .result-amount{font-size:1.5rem}
+  .alert-form{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+ 
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon">₿</div>
+    <span>ForexPulse</span><em>&nbsp;Exchange</em>
+  </div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showSection('converter',this)">💱 Converter</button>
+    <button class="nav-link" onclick="showSection('multi',this)">🔢 Multi</button>
+    <button class="nav-link" onclick="showSection('chart',this)">📈 Chart</button>
+    <button class="nav-link" onclick="showSection('alerts',this)">🔔 Alerts</button>
+    <button class="nav-link" onclick="showSection('favorites',this)">⭐ Favorites</button>
+    <button class="nav-link" onclick="showSection('learn',this)">📚 Learn</button>
+  </div>
+  <div class="nav-right">
+    <div class="live-badge"><span class="live-dot"></span><span id="apiStatus">Loading...</span></div>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</nav>
+ 
+<div class="mobile-menu" id="mobileMenu">
+  <button class="nav-link active" onclick="showSection('converter',this);toggleMenu()">💱 Converter</button>
+  <button class="nav-link" onclick="showSection('multi',this);toggleMenu()">🔢 Multi Currency</button>
+  <button class="nav-link" onclick="showSection('chart',this);toggleMenu()">📈 Historical Chart</button>
+  <button class="nav-link" onclick="showSection('alerts',this);toggleMenu()">🔔 Rate Alerts</button>
+  <button class="nav-link" onclick="showSection('favorites',this);toggleMenu()">⭐ Favorites</button>
+  <button class="nav-link" onclick="showSection('learn',this);toggleMenu()">📚 Learn</button>
+</div>
+ 
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Tools</div>
+      <button class="sidebar-item active" onclick="showSection('converter',this)"><span class="icon">💱</span>Converter</button>
+      <button class="sidebar-item" onclick="showSection('multi',this)"><span class="icon">🔢</span>Multi Currency</button>
+      <button class="sidebar-item" onclick="showSection('chart',this)"><span class="icon">📈</span>Chart</button>
+      <button class="sidebar-item" onclick="showSection('alerts',this)"><span class="icon">🔔</span>Alerts</button>
+      <button class="sidebar-item" onclick="showSection('favorites',this)"><span class="icon">⭐</span>Favorites</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Knowledge</div>
+      <button class="sidebar-item" onclick="showSection('learn',this)"><span class="icon">📚</span>Learn</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Market</div>
+      <div id="sidebarRates" style="display:flex;flex-direction:column;gap:4px;padding:0 4px"></div>
+    </div>
+  </aside>
+ 
+  <main class="main">
+ 
+    <!-- ═══ CONVERTER ═══ -->
+    <section class="section active" id="sec-converter">
+      <div class="section-header">
+        <div class="section-title">Live <span>Currency Converter</span></div>
+      </div>
+      <div class="card card-glow-gold">
+        <div class="converter-grid">
+          <div class="input-group">
+            <div class="input-label">From</div>
+            <div class="currency-input-wrap">
+              <select id="fromCurr" class="currency-select" onchange="updateRateLabel()"></select>
+              <input id="fromAmount" class="amount-input" type="number" placeholder="0.00" value="1" oninput="convertLive()">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">To</div>
+            <div class="currency-input-wrap">
+              <select id="toCurr" class="currency-select" onchange="updateRateLabel()"></select>
+              <input id="toAmount" class="amount-input" type="number" placeholder="0.00" readonly style="background:rgba(240,185,11,0.03)">
+            </div>
+          </div>
+        </div>
+        <button class="swap-btn" onclick="swapCurrencies()">⇄ Swap</button>
+        <div style="height:12px"></div>
+        <button class="convert-btn" onclick="doConvert()">Convert Now</button>
+        <div id="rateLabel" class="rate-label" style="margin-top:14px">— Loading live rates —</div>
+        <div id="resultDisplay" class="result-display" style="display:none">
+          <div id="resultAmount" class="result-amount">—</div>
+          <div id="resultRate" class="result-rate">—</div>
+          <div id="resultTime" class="result-time">—</div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ═══ MULTI CURRENCY ═══ -->
+    <section class="section" id="sec-multi">
+      <div class="section-header">
+        <div class="section-title">Multi <span>Currency</span></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div class="currency-input-wrap" style="flex:1;min-width:160px">
+            <select id="multiBase" class="currency-select" onchange="renderMulti()" style="min-width:110px"></select>
+            <input id="multiAmount" class="amount-input" type="number" value="100" placeholder="Amount" oninput="renderMulti()">
+          </div>
+        </div>
+        <div id="multiGrid" class="multi-grid"></div>
+      </div>
+    </section>
+ 
+    <!-- ═══ CHART ═══ -->
+    <section class="section" id="sec-chart">
+      <div class="section-header">
+        <div class="section-title">Historical <span>Chart</span></div>
+      </div>
+      <div class="card">
+        <div class="chart-controls">
+          <div class="chart-pair-selector">
+            <select id="chartBase" onchange="loadChart()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-family:var(--font);font-size:.85rem;outline:none;cursor:pointer"></select>
+            <span>→</span>
+            <select id="chartTarget" onchange="loadChart()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-family:var(--font);font-size:.85rem;outline:none;cursor:pointer"></select>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="period-btn active" onclick="setPeriod(7,this)">7D</button>
+            <button class="period-btn" onclick="setPeriod(30,this)">30D</button>
+            <button class="period-btn" onclick="setPeriod(90,this)">90D</button>
+          </div>
+        </div>
+        <div id="chartError" style="display:none"></div>
+        <div class="chart-wrap"><canvas id="rateChart"></canvas></div>
+        <div class="chart-stats">
+          <div class="chart-stat"><div class="chart-stat-label">Current</div><div class="chart-stat-val" id="statCurrent">—</div></div>
+          <div class="chart-stat"><div class="chart-stat-label">High</div><div class="chart-stat-val up" id="statHigh">—</div></div>
+          <div class="chart-stat"><div class="chart-stat-label">Low</div><div class="chart-stat-val down" id="statLow">—</div></div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ═══ ALERTS ═══ -->
+    <section class="section" id="sec-alerts">
+      <div class="section-header">
+        <div class="section-title">Rate <span>Alerts</span></div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <h2>Create Alert</h2>
+        <div class="subtitle">Get notified when a currency pair hits your target</div>
+        <div class="alert-form">
+          <div class="alert-input-wrap">
+            <label>From</label>
+            <select id="alertFrom" class="alert-input" style="cursor:pointer;appearance:none"></select>
+          </div>
+          <div class="alert-input-wrap">
+            <label>To</label>
+            <select id="alertTo" class="alert-input" style="cursor:pointer;appearance:none"></select>
+          </div>
+          <div class="alert-input-wrap" style="grid-column:1">
+            <label>Target Rate</label>
+            <input id="alertTarget" class="alert-input" type="number" placeholder="e.g. 85.00" step="0.0001">
+          </div>
+          <div class="alert-input-wrap">
+            <label>Direction</label>
+            <select id="alertDir" class="alert-input" style="cursor:pointer;appearance:none">
+              <option value="above">Rate goes above ↑</option>
+              <option value="below">Rate goes below ↓</option>
+            </select>
+          </div>
+          <button class="add-alert-btn" onclick="addAlert()">+ Add Alert</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Active Alerts</h2>
+        <div class="subtitle">Checks every 30 seconds</div>
+        <div id="alertsList" class="alerts-list">
+          <div style="color:var(--text3);font-size:.85rem;text-align:center;padding:24px">No alerts yet. Create one above.</div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ═══ FAVORITES ═══ -->
+    <section class="section" id="sec-favorites">
+      <div class="section-header">
+        <div class="section-title">⭐ <span>Favorites</span></div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <h2>Your Favorites</h2>
+        <div class="subtitle">Starred currencies vs USD — tap to add to converter</div>
+        <div id="favGrid" class="fav-grid"></div>
+      </div>
+      <div class="card">
+        <h2>All Currencies</h2>
+        <div class="subtitle">Click ⭐ to favorite (max 5)</div>
+        <div id="allCurrGrid" class="all-currencies"></div>
+      </div>
+    </section>
+ 
+    <!-- ═══ LEARN ═══ -->
+    <section class="section" id="sec-learn">
+      <div class="section-header">
+        <div class="section-title">📚 <span>Learn</span></div>
+      </div>
+      <div class="learn-tabs">
+        <button class="learn-tab active" onclick="showLearnTab('facts',this)">Currency Facts</button>
+        <button class="learn-tab" onclick="showLearnTab('strength',this)">Strength Index</button>
+        <button class="learn-tab" onclick="showLearnTab('didyouknow',this)">Did You Know?</button>
+        <button class="learn-tab" onclick="showLearnTab('glossary',this)">Glossary</button>
+      </div>
+ 
+      <!-- Facts -->
+      <div class="learn-panel active" id="lp-facts">
+        <div class="facts-select-wrap">
+          <label style="font-size:.8rem;color:var(--text2)">Select Currency:</label>
+          <select id="factsSelect" onchange="renderFact()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-family:var(--font);font-size:.9rem;outline:none;cursor:pointer;max-width:260px"></select>
+        </div>
+        <div id="factCard" class="fact-card"></div>
+      </div>
+ 
+      <!-- Strength -->
+      <div class="learn-panel" id="lp-strength">
+        <div class="card">
+          <h2>Currency Strength Index</h2>
+          <div class="subtitle">Value of 1 unit vs USD (live data)</div>
+          <div id="strengthGrid" class="strength-grid"></div>
+        </div>
+      </div>
+ 
+      <!-- Did You Know -->
+      <div class="learn-panel" id="lp-didyouknow">
+        <div class="card">
+          <h2>Did You Know?</h2>
+          <div class="subtitle">Fascinating facts about world currencies</div>
+          <div class="carousel-wrap">
+            <div class="carousel-slides" id="carouselSlides"></div>
+          </div>
+          <div class="carousel-dots" id="carouselDots"></div>
+          <div class="carousel-nav">
+            <button onclick="carouselPrev()">‹</button>
+            <button onclick="carouselNext()">›</button>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- Glossary -->
+      <div class="learn-panel" id="lp-glossary">
+        <div class="glossary-grid" id="glossaryGrid"></div>
+      </div>
+    </section>
+ 
+  </main>
+</div>
+ 
+<div class="toast-container" id="toastContainer"></div>
+ 
+<script>
+/* ═══════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════ */
+const CURRENCIES = {
+  USD:{flag:'🇺🇸',name:'US Dollar',symbol:'$'},EUR:{flag:'🇪🇺',name:'Euro',symbol:'€'},
+  GBP:{flag:'🇬🇧',name:'British Pound',symbol:'£'},JPY:{flag:'🇯🇵',name:'Japanese Yen',symbol:'¥'},
+  INR:{flag:'🇮🇳',name:'Indian Rupee',symbol:'₹'},CAD:{flag:'🇨🇦',name:'Canadian Dollar',symbol:'$'},
+  AUD:{flag:'🇦🇺',name:'Australian Dollar',symbol:'$'},CHF:{flag:'🇨🇭',name:'Swiss Franc',symbol:'₣'},
+  CNY:{flag:'🇨🇳',name:'Chinese Yuan',symbol:'¥'},HKD:{flag:'🇭🇰',name:'Hong Kong Dollar',symbol:'$'},
+  SGD:{flag:'🇸🇬',name:'Singapore Dollar',symbol:'$'},KRW:{flag:'🇰🇷',name:'South Korean Won',symbol:'₩'},
+  MXN:{flag:'🇲🇽',name:'Mexican Peso',symbol:'$'},BRL:{flag:'🇧🇷',name:'Brazilian Real',symbol:'R$'},
+  RUB:{flag:'🇷🇺',name:'Russian Ruble',symbol:'₽'},ZAR:{flag:'🇿🇦',name:'South African Rand',symbol:'R'},
+  TRY:{flag:'🇹🇷',name:'Turkish Lira',symbol:'₺'},NOK:{flag:'🇳🇴',name:'Norwegian Krone',symbol:'kr'},
+  SEK:{flag:'🇸🇪',name:'Swedish Krona',symbol:'kr'},DKK:{flag:'🇩🇰',name:'Danish Krone',symbol:'kr'},
+  PLN:{flag:'🇵🇱',name:'Polish Złoty',symbol:'zł'},CZK:{flag:'🇨🇿',name:'Czech Koruna',symbol:'Kč'},
+  HUF:{flag:'🇭🇺',name:'Hungarian Forint',symbol:'Ft'},ILS:{flag:'🇮🇱',name:'Israeli Shekel',symbol:'₪'},
+  AED:{flag:'🇦🇪',name:'UAE Dirham',symbol:'د.إ'},SAR:{flag:'🇸🇦',name:'Saudi Riyal',symbol:'ر.س'},
+  THB:{flag:'🇹🇭',name:'Thai Baht',symbol:'฿'},MYR:{flag:'🇲🇾',name:'Malaysian Ringgit',symbol:'RM'},
+  IDR:{flag:'🇮🇩',name:'Indonesian Rupiah',symbol:'Rp'},PHP:{flag:'🇵🇭',name:'Philippine Peso',symbol:'₱'},
+  VND:{flag:'🇻🇳',name:'Vietnamese Dong',symbol:'₫'},PKR:{flag:'🇵🇰',name:'Pakistani Rupee',symbol:'₨'},
+  BDT:{flag:'🇧🇩',name:'Bangladeshi Taka',symbol:'৳'},EGP:{flag:'🇪🇬',name:'Egyptian Pound',symbol:'£'},
+  NGN:{flag:'🇳🇬',name:'Nigerian Naira',symbol:'₦'},KWD:{flag:'🇰🇼',name:'Kuwaiti Dinar',symbol:'د.ك'},
+  BHD:{flag:'🇧🇭',name:'Bahraini Dinar',symbol:'.د.ب'},OMR:{flag:'🇴🇲',name:'Omani Rial',symbol:'ر.ع'},
+  QAR:{flag:'🇶🇦',name:'Qatari Riyal',symbol:'ر.ق'},NZD:{flag:'🇳🇿',name:'New Zealand Dollar',symbol:'$'},
+  TWD:{flag:'🇹🇼',name:'Taiwan Dollar',symbol:'$'},LKR:{flag:'🇱🇰',name:'Sri Lankan Rupee',symbol:'₨'},
+  CLP:{flag:'🇨🇱',name:'Chilean Peso',symbol:'$'},COP:{flag:'🇨🇴',name:'Colombian Peso',symbol:'$'},
+  PEN:{flag:'🇵🇪',name:'Peruvian Sol',symbol:'S/'},ARS:{flag:'🇦🇷',name:'Argentine Peso',symbol:'$'},
+  UAH:{flag:'🇺🇦',name:'Ukrainian Hryvnia',symbol:'₴'},RON:{flag:'🇷🇴',name:'Romanian Leu',symbol:'lei'},
+};
+ 
+const CURRENCY_FACTS = {
+  USD:{full:'United States Dollar',country:'United States',symbol:'$',code:'USD',bank:'Federal Reserve',fun:'The US Dollar is the world\'s primary reserve currency, used in over 85% of all foreign exchange transactions globally.'},
+  EUR:{full:'Euro',country:'Eurozone (20 countries)',symbol:'€',code:'EUR',bank:'European Central Bank',fun:'The Euro is the second most traded currency in the world and the official currency of 20 EU member states.'},
+  GBP:{full:'Pound Sterling',country:'United Kingdom',symbol:'£',code:'GBP',bank:'Bank of England',fun:'The British Pound is the world\'s oldest currency still in use, dating back to 775 AD under King Offa of Mercia.'},
+  JPY:{full:'Japanese Yen',country:'Japan',symbol:'¥',code:'JPY',bank:'Bank of Japan',fun:'Japan\'s Yen notes feature iconic imagery including Mt. Fuji and cherry blossoms, celebrating Japanese culture.'},
+  INR:{full:'Indian Rupee',country:'India',symbol:'₹',code:'INR',bank:'Reserve Bank of India',fun:'The Rupee symbol ₹ was officially adopted in 2010, designed by D. Udaya Kumar, blending the Devanagari "Ra" and Latin "R".'},
+  CHF:{full:'Swiss Franc',country:'Switzerland',symbol:'Fr',code:'CHF',bank:'Swiss National Bank',fun:'The Swiss Franc is considered one of the world\'s safest currencies, a traditional "safe haven" during global crises.'},
+  CNY:{full:'Chinese Yuan Renminbi',country:'China',symbol:'¥',code:'CNY',bank:'People\'s Bank of China',fun:'China introduced the world\'s first paper currency — called "jiaozi" — during the Song Dynasty around 960 AD.'},
+  AUD:{full:'Australian Dollar',country:'Australia',symbol:'$',code:'AUD',bank:'Reserve Bank of Australia',fun:'Australian banknotes are made of polymer plastic, making them among the world\'s most durable and difficult to counterfeit.'},
+  CAD:{full:'Canadian Dollar',country:'Canada',symbol:'$',code:'CAD',bank:'Bank of Canada',fun:'The Canadian Dollar is nicknamed the "Loonie" after the common loon bird depicted on the $1 coin.'},
+  KWD:{full:'Kuwaiti Dinar',country:'Kuwait',symbol:'د.ك',code:'KWD',bank:'Central Bank of Kuwait',fun:'The Kuwaiti Dinar is the world\'s highest-valued currency per unit, backed by Kuwait\'s vast oil reserves.'},
+  BHD:{full:'Bahraini Dinar',country:'Bahrain',symbol:'.د.ب',code:'BHD',bank:'Central Bank of Bahrain',fun:'The Bahraini Dinar is the second highest-valued currency, subdivided into 1000 fils — far more than most currencies.'},
+  SGD:{full:'Singapore Dollar',country:'Singapore',symbol:'$',code:'SGD',bank:'Monetary Authority of Singapore',fun:'Singapore\'s currency is interchangeable at par with the Brunei Dollar under a 1967 Currency Interchangeability Agreement.'},
+  ZAR:{full:'South African Rand',country:'South Africa',symbol:'R',code:'ZAR',bank:'South African Reserve Bank',fun:'The Rand is named after Witwatersrand ("ridge of white waters"), the gold-rich reef around Johannesburg.'},
+  BRL:{full:'Brazilian Real',country:'Brazil',symbol:'R$',code:'BRL',bank:'Banco Central do Brasil',fun:'Brazil introduced the Real in 1994 as part of the "Plano Real" — a successful plan to tame hyperinflation that had reached 2,500% annually.'},
+  NOK:{full:'Norwegian Krone',country:'Norway',symbol:'kr',code:'NOK',bank:'Norges Bank',fun:'Norway\'s Government Pension Fund, funded by oil revenue, is the world\'s largest sovereign wealth fund, backing the Krone.'},
+  NZD:{full:'New Zealand Dollar',country:'New Zealand',symbol:'$',code:'NZD',bank:'Reserve Bank of New Zealand',fun:'NZD is nicknamed the "Kiwi" after the native kiwi bird that appears on the $1 coin.'},
+  MXN:{full:'Mexican Peso',country:'Mexico',symbol:'$',code:'MXN',bank:'Banco de México',fun:'The Mexican Peso was the first currency to use the "$" symbol, predating the US Dollar\'s use of it.'},
+  TRY:{full:'Turkish Lira',country:'Turkey',symbol:'₺',code:'TRY',bank:'Central Bank of Turkey',fun:'Turkey redenominated the Lira in 2005, removing six zeros after hyperinflation made the old notes almost worthless.'},
+  SEK:{full:'Swedish Krona',country:'Sweden',symbol:'kr',code:'SEK',bank:'Sveriges Riksbank',fun:'The Sveriges Riksbank, founded in 1668, is the world\'s oldest central bank still in operation.'},
+  THB:{full:'Thai Baht',country:'Thailand',symbol:'฿',code:'THB',bank:'Bank of Thailand',fun:'Depiction of the Thai King is sacred on currency — it\'s illegal to step on or tear Thai banknotes.'},
+};
+ 
+const DID_YOU_KNOW = [
+  "The Kuwaiti Dinar is the world's most valuable currency per unit, worth about 3.25 USD — largely due to Kuwait's massive oil exports.",
+  "The British Pound Sterling is the world's oldest currency still in use, originating in 775 AD — making it over 1,250 years old.",
+  "Over $6.6 trillion is traded daily in the global foreign exchange market, making it the largest financial market on Earth.",
+  "China's paper money, the jiaozi, was the world's first paper currency, invented during the Song Dynasty around 960 AD.",
+  "The US Dollar accounts for approximately 88% of all daily forex transactions, cementing its role as the global reserve currency.",
+  "Zimbabwe printed a 100 trillion dollar note in 2009 during hyperinflation — it could barely buy a loaf of bread at the time.",
+  "The Euro is used by 20 nations and over 340 million people, making it one of the most widely-used currencies in history.",
+  "Sweden is on track to become the world's first cashless society, with less than 10% of transactions made using physical cash.",
+  "The Swiss Franc gained so much value after the 2008 crisis that Switzerland introduced negative interest rates to weaken it.",
+  "Ancient Lydian merchants in 640 BC created the world's first standardized coins from electrum — a natural gold-silver alloy.",
+];
+ 
+const GLOSSARY = [
+  {term:'Exchange Rate',def:'The price at which one currency can be exchanged for another. It fluctuates based on supply, demand, and economic conditions.'},
+  {term:'Bid/Ask Spread',def:'The difference between the price a dealer will buy (bid) and sell (ask) a currency. This spread is the dealer\'s profit.'},
+  {term:'Forex (FX)',def:'Short for "Foreign Exchange" — the global marketplace where currencies are bought and sold 24 hours a day, 5 days a week.'},
+  {term:'Pip',def:'The smallest standard price increment in a forex quote. For most pairs, 1 pip = 0.0001 (0.01 for JPY pairs).'},
+  {term:'Base Currency',def:'The first currency listed in a forex pair (e.g., USD in USD/EUR). Its value is always expressed as 1 unit.'},
+  {term:'Quote Currency',def:'The second currency in a pair. Its value is expressed relative to 1 unit of the base currency.'},
+  {term:'Appreciation',def:'When a currency increases in value relative to another. Strong economic data often causes appreciation.'},
+  {term:'Depreciation',def:'When a currency decreases in value relative to another. Inflation or political instability can cause depreciation.'},
+  {term:'Hedging',def:'A risk management strategy using financial instruments to offset potential losses from currency fluctuations.'},
+  {term:'Arbitrage',def:'Exploiting price differences of the same currency in different markets to make risk-free profit — opportunities close quickly.'},
+];
+ 
+const MULTI_TARGETS = ['EUR','GBP','JPY','INR','CAD','AUD','CHF','CNY'];
+const MAJOR_CURRENCIES = ['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD'];
+const FALLBACK_RATES = {USD:1,EUR:0.92,GBP:0.79,JPY:149.5,INR:83.12,CAD:1.36,AUD:1.53,CHF:0.88,CNY:7.24,HKD:7.82,SGD:1.34,KRW:1325,MXN:17.15,BRL:4.97,RUB:90.5,ZAR:18.75,TRY:32.1,NOK:10.6,SEK:10.4,DKK:6.89,PLN:3.97,CZK:22.8,HUF:353,ILS:3.67,AED:3.67,SAR:3.75,THB:35.1,MYR:4.72,IDR:15700,PHP:56.1,VND:24400,PKR:278,BDT:110,EGP:30.9,NGN:1585,KWD:0.308,BHD:0.376,OMR:0.385,QAR:3.64,NZD:1.63,TWD:32.1,LKR:312,CLP:895,COP:3900,PEN:3.72,ARS:870,UAH:37.9,RON:4.58};
+ 
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let rates = {};
+let lastFetch = 0;
+let chartInstance = null;
+let currentPeriod = 7;
+let alerts = JSON.parse(localStorage.getItem('fpAlerts')||'[]');
+let favorites = JSON.parse(localStorage.getItem('fpFavorites')||'["EUR","GBP","JPY","INR","AUD"]');
+let alertInterval = null;
+let carouselIndex = 0;
+ 
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+async function init(){
+  populateSelects();
+  await fetchRates('USD');
+  convertLive();
+  renderMulti();
+  renderFavorites();
+  renderSidebarRates();
+  renderAlerts();
+  renderAllCurrGrid();
+  renderCarousel();
+  renderGlossary();
+  populateFactsSelect();
+  renderFact();
+  populateChartSelects();
+  loadChart();
+  startAlertChecker();
+}
+ 
+async function fetchRates(base='USD'){
+  const now = Date.now();
+  if(rates[base] && now - lastFetch < 60000) return;
+  try{
+    document.getElementById('apiStatus').textContent='Fetching...';
+    const r = await fetch(`https://api.exchangerate-api.com/v4/latest/${base}`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    rates[base] = d.rates;
+    lastFetch = now;
+    document.getElementById('apiStatus').textContent='Live';
+    updateRateLabel();
+  }catch(e){
+    if(!rates[base]){
+      rates[base] = {...FALLBACK_RATES};
+      // normalize to base
+      if(base!=='USD'&&FALLBACK_RATES[base]){
+        const factor = 1/FALLBACK_RATES[base];
+        for(const k in rates[base]) rates[base][k] = rates[base][k]*factor;
+        rates[base][base]=1;
+      }
+    }
+    document.getElementById('apiStatus').textContent='Offline';
+    showToast('Using cached rates (offline mode)','warning');
+  }
+}
+ 
+function getRate(from,to){
+  if(rates[from]&&rates[from][to]) return rates[from][to];
+  if(rates['USD']&&rates['USD'][from]&&rates['USD'][to]) return rates['USD'][to]/rates['USD'][from];
+  if(FALLBACK_RATES[from]&&FALLBACK_RATES[to]) return FALLBACK_RATES[to]/FALLBACK_RATES[from];
+  return 1;
+}
+ 
+/* ═══════════════════════════════════════════════
+   POPULATE SELECTS
+═══════════════════════════════════════════════ */
+function populateSelects(){
+  const codes = Object.keys(CURRENCIES);
+  const selects = ['fromCurr','toCurr','multiBase','alertFrom','alertTo','chartBase','chartTarget'];
+  selects.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML='';
+    codes.forEach(code=>{
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = `${CURRENCIES[code].flag} ${code}`;
+      el.appendChild(opt);
+    });
+  });
+  document.getElementById('fromCurr').value='USD';
+  document.getElementById('toCurr').value='INR';
+  document.getElementById('multiBase').value='USD';
+  document.getElementById('alertFrom').value='USD';
+  document.getElementById('alertTo').value='INR';
+  document.getElementById('chartBase').value='USD';
+  document.getElementById('chartTarget').value='EUR';
+}
+ 
+function populateFactsSelect(){
+  const sel = document.getElementById('factsSelect');
+  sel.innerHTML='';
+  Object.keys(CURRENCY_FACTS).forEach(code=>{
+    const opt = document.createElement('option');
+    opt.value=code;
+    opt.textContent=`${CURRENCIES[code]?.flag||''} ${code} — ${CURRENCY_FACTS[code].full}`;
+    sel.appendChild(opt);
+  });
+}
+ 
+function populateChartSelects(){
+  const codes = Object.keys(CURRENCIES);
+  ['chartBase','chartTarget'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.innerHTML='';
+    codes.forEach(code=>{
+      const o=document.createElement('option');
+      o.value=code;o.textContent=`${CURRENCIES[code].flag} ${code}`;
+      el.appendChild(o);
+    });
+  });
+  document.getElementById('chartBase').value='USD';
+  document.getElementById('chartTarget').value='EUR';
+}
+ 
+/* ═══════════════════════════════════════════════
+   CONVERTER
+═══════════════════════════════════════════════ */
+function updateRateLabel(){
+  const from=document.getElementById('fromCurr').value;
+  const to=document.getElementById('toCurr').value;
+  const rate=getRate(from,to);
+  document.getElementById('rateLabel').innerHTML=`<span>1 ${CURRENCIES[from]?.flag||''} ${from}</span> <span style="color:var(--text3)">＝</span> <span style="color:var(--gold);font-weight:700">${fmtNum(rate,4)} ${CURRENCIES[to]?.flag||''} ${to}</span>`;
+}
+ 
+async function convertLive(){
+  const from=document.getElementById('fromCurr').value;
+  const to=document.getElementById('toCurr').value;
+  const amount=parseFloat(document.getElementById('fromAmount').value)||0;
+  await fetchRates(from);
+  const rate=getRate(from,to);
+  const result=amount*rate;
+  document.getElementById('toAmount').value=fmtNum(result,4);
+  updateRateLabel();
+}
+ 
+async function doConvert(){
+  const btn=document.querySelector('.convert-btn');
+  const from=document.getElementById('fromCurr').value;
+  const to=document.getElementById('toCurr').value;
+  const amount=parseFloat(document.getElementById('fromAmount').value)||0;
+  btn.innerHTML='<span class="spinner"></span>';
+  btn.disabled=true;
+  await fetchRates(from);
+  btn.innerHTML='Convert Now';btn.disabled=false;
+  const rate=getRate(from,to);
+  const result=amount*rate;
+  document.getElementById('toAmount').value=fmtNum(result,4);
+  updateRateLabel();
+  const rd=document.getElementById('resultDisplay');
+  rd.style.display='block';
+  const ra=document.getElementById('resultAmount');
+  ra.className='result-amount count-anim';
+  ra.textContent=`${CURRENCIES[to]?.symbol||''}${fmtNum(result,2)}`;
+  setTimeout(()=>ra.classList.remove('count-anim'),500);
+  document.getElementById('resultRate').textContent=`${fmtNum(amount,2)} ${from} = ${fmtNum(result,2)} ${to} · Rate: ${fmtNum(rate,6)}`;
+  document.getElementById('resultTime').textContent=`Updated: ${new Date().toLocaleTimeString()}`;
+}
+ 
+function swapCurrencies(){
+  const fc=document.getElementById('fromCurr');
+  const tc=document.getElementById('toCurr');
+  [fc.value,tc.value]=[tc.value,fc.value];
+  convertLive();
+}
+ 
+/* ═══════════════════════════════════════════════
+   MULTI CURRENCY
+═══════════════════════════════════════════════ */
+async function renderMulti(){
+  const base=document.getElementById('multiBase').value;
+  const amount=parseFloat(document.getElementById('multiAmount').value)||100;
+  await fetchRates(base);
+  const grid=document.getElementById('multiGrid');
+  grid.innerHTML=MULTI_TARGETS.map(code=>{
+    if(code===base) return '';
+    const rate=getRate(base,code);
+    const val=amount*rate;
+    const c=CURRENCIES[code]||{flag:'🏳',name:code};
+    return `<div class="multi-card">
+      <div class="multi-flag">${c.flag}</div>
+      <div class="multi-currency">${code}</div>
+      <div class="multi-amount">${CURRENCIES[code]?.symbol||''}${fmtNum(val,2)}</div>
+      <div class="multi-name">${c.name}</div>
+    </div>`;
+  }).join('');
+}
+ 
+/* ═══════════════════════════════════════════════
+   CHART
+═══════════════════════════════════════════════ */
+function setPeriod(days,btn){
+  currentPeriod=days;
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadChart();
+}
+ 
+async function loadChart(){
+  const base=document.getElementById('chartBase').value;
+  const target=document.getElementById('chartTarget').value;
+  // Generate mock historical data based on current rate ± noise
+  await fetchRates(base);
+  const currentRate=getRate(base,target);
+  const labels=[],data=[];
+  const now=new Date();
+  for(let i=currentPeriod-1;i>=0;i--){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    labels.push(d.toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+    const noise=(Math.random()-.5)*.04;
+    const trend=(currentPeriod-i)/currentPeriod*.01;
+    data.push(+(currentRate*(1+noise-trend*.5)).toFixed(6));
+  }
+  data[data.length-1]=currentRate;
+  const high=Math.max(...data),low=Math.min(...data);
+  document.getElementById('statCurrent').textContent=fmtNum(currentRate,4);
+  document.getElementById('statHigh').textContent=fmtNum(high,4);
+  document.getElementById('statLow').textContent=fmtNum(low,4);
+  if(chartInstance) chartInstance.destroy();
+  const ctx=document.getElementById('rateChart').getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,280);
+  grad.addColorStop(0,'rgba(240,185,11,0.3)');
+  grad.addColorStop(1,'rgba(240,185,11,0)');
+  chartInstance=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{label:`${base}/${target}`,data,borderColor:'#F0B90B',backgroundColor:grad,borderWidth:2,pointRadius:3,pointBackgroundColor:'#F0B90B',tension:.4,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>`${base}/${target}: ${fmtNum(ctx.raw,4)}`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#848E9C',font:{size:11},maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#848E9C',font:{size:11},callback:v=>fmtNum(v,4)},position:'right'}}}
+  });
+}
+ 
+/* ═══════════════════════════════════════════════
+   ALERTS
+═══════════════════════════════════════════════ */
+function addAlert(){
+  const from=document.getElementById('alertFrom').value;
+  const to=document.getElementById('alertTo').value;
+  const target=parseFloat(document.getElementById('alertTarget').value);
+  const dir=document.getElementById('alertDir').value;
+  if(!target||isNaN(target)){showToast('Enter a valid target rate','warning');return;}
+  alerts.push({id:Date.now(),from,to,target,dir,triggered:false});
+  saveAlerts();renderAlerts();
+  document.getElementById('alertTarget').value='';
+  showToast(`Alert set: ${from}/${to} ${dir==='above'?'above':'below'} ${fmtNum(target,4)}`,'info');
+}
+ 
+function deleteAlert(id){
+  alerts=alerts.filter(a=>a.id!==id);
+  saveAlerts();renderAlerts();
+}
+ 
+function saveAlerts(){localStorage.setItem('fpAlerts',JSON.stringify(alerts));}
+ 
+function renderAlerts(){
+  const el=document.getElementById('alertsList');
+  if(!alerts.length){el.innerHTML='<div style="color:var(--text3);font-size:.85rem;text-align:center;padding:24px">No alerts yet. Create one above.</div>';return;}
+  el.innerHTML=alerts.map(a=>`
+    <div class="alert-item${a.triggered?' triggered':''}" id="alert-${a.id}">
+      <div class="alert-info">
+        <div class="alert-pair">${CURRENCIES[a.from]?.flag||''} ${a.from} → ${CURRENCIES[a.to]?.flag||''} ${a.to}</div>
+        <div class="alert-target">Target: ${a.dir==='above'?'≥':'≤'} ${fmtNum(a.target,4)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="alert-status ${a.triggered?'triggered-badge':'watching'}">${a.triggered?'✅ Triggered':'👀 Watching'}</span>
+        <button class="delete-alert" onclick="deleteAlert(${a.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+ 
+function startAlertChecker(){
+  if(alertInterval) clearInterval(alertInterval);
+  alertInterval=setInterval(async()=>{
+    for(const a of alerts){
+      if(a.triggered) continue;
+      await fetchRates(a.from);
+      const rate=getRate(a.from,a.to);
+      const hit=(a.dir==='above'&&rate>=a.target)||(a.dir==='below'&&rate<=a.target);
+      if(hit){
+        a.triggered=true;
+        saveAlerts();renderAlerts();
+        showToast(`🔔 Alert! ${a.from}/${a.to} hit ${fmtNum(rate,4)} (target: ${fmtNum(a.target,4)})`,'success');
+      }
+    }
+  },30000);
+}
+ 
+/* ═══════════════════════════════════════════════
+   FAVORITES
+═══════════════════════════════════════════════ */
+function toggleFav(code){
+  if(favorites.includes(code)){favorites=favorites.filter(c=>c!==code);}
+  else{if(favorites.length>=5){showToast('Max 5 favorites allowed','warning');return;}favorites.push(code);}
+  localStorage.setItem('fpFavorites',JSON.stringify(favorites));
+  renderFavorites();renderAllCurrGrid();
+}
+ 
+async function renderFavorites(){
+  await fetchRates('USD');
+  const grid=document.getElementById('favGrid');
+  if(!favorites.length){grid.innerHTML='<div style="color:var(--text3);font-size:.85rem;padding:16px">No favorites yet. Star currencies below.</div>';return;}
+  grid.innerHTML=favorites.map(code=>{
+    const c=CURRENCIES[code]||{flag:'🏳',name:code,symbol:''};
+    const rate=getRate('USD',code);
+    const change=((Math.random()-.45)*2).toFixed(2);
+    return `<div class="fav-card" onclick="quickConvert('${code}')">
+      <button class="fav-star active" onclick="event.stopPropagation();toggleFav('${code}')">⭐</button>
+      <div class="fav-flag">${c.flag}</div>
+      <div class="fav-code">${code}</div>
+      <div class="fav-rate">${fmtNum(rate,4)}</div>
+      <div class="fav-change ${+change>=0?'up':'down'}">${+change>=0?'▲':'▼'} ${Math.abs(change)}%</div>
+    </div>`;
+  }).join('');
+}
+ 
+function renderAllCurrGrid(){
+  const grid=document.getElementById('allCurrGrid');
+  grid.innerHTML=Object.keys(CURRENCIES).map(code=>{
+    const c=CURRENCIES[code];
+    const starred=favorites.includes(code);
+    return `<div class="curr-option ${starred?'starred':''}" onclick="toggleFav('${code}')">
+      <span>${c.flag}</span><span style="font-family:var(--mono);font-size:.8rem;font-weight:600">${code}</span>
+      <span style="margin-left:auto;color:${starred?'var(--gold)':'var(--text3)'}">${starred?'⭐':'☆'}</span>
+    </div>`;
+  }).join('');
+}
+ 
+function quickConvert(code){
+  document.getElementById('toCurr').value=code;
+  showSection('converter');
+  convertLive();
+}
+ 
+/* ═══════════════════════════════════════════════
+   SIDEBAR RATES
+═══════════════════════════════════════════════ */
+function renderSidebarRates(){
+  const el=document.getElementById('sidebarRates');
+  const pairs=[['USD','EUR'],['USD','GBP'],['USD','JPY'],['USD','INR']];
+  el.innerHTML=pairs.map(([a,b])=>{
+    const rate=getRate(a,b);
+    const change=((Math.random()-.45)*1.5).toFixed(2);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 8px;border-radius:6px;font-size:.78rem">
+      <span style="color:var(--text2)">${CURRENCIES[a].flag}${a}/${CURRENCIES[b].flag}${b}</span>
+      <div style="text-align:right">
+        <div style="font-family:var(--mono);font-size:.8rem">${fmtNum(rate,3)}</div>
+        <div style="color:${+change>=0?'var(--green)':'var(--red)'};font-size:.7rem">${+change>=0?'+':''}${change}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+ 
+/* ═══════════════════════════════════════════════
+   LEARN — FACTS
+═══════════════════════════════════════════════ */
+function renderFact(){
+  const code=document.getElementById('factsSelect').value;
+  const f=CURRENCY_FACTS[code];
+  const c=CURRENCIES[code]||{flag:'🏳'};
+  if(!f) return;
+  document.getElementById('factCard').innerHTML=`
+    <div class="fact-flag">${c.flag}</div>
+    <div class="fact-name">${f.full}</div>
+    <div class="fact-country">${f.country}</div>
+    <div class="fact-grid">
+      <div class="fact-item"><div class="fact-item-label">Symbol</div><div class="fact-item-val">${f.symbol}</div></div>
+      <div class="fact-item"><div class="fact-item-label">ISO Code</div><div class="fact-item-val">${f.code}</div></div>
+      <div class="fact-item" style="grid-column:1/-1"><div class="fact-item-label">Central Bank</div><div class="fact-item-val" style="font-family:var(--font);font-size:.9rem">${f.bank}</div></div>
+    </div>
+    <div class="fun-fact">${f.fun}</div>`;
+}
+ 
+/* ═══════════════════════════════════════════════
+   LEARN — STRENGTH
+═══════════════════════════════════════════════ */
+async function renderStrength(){
+  await fetchRates('USD');
+  const grid=document.getElementById('strengthGrid');
+  const pairs=MAJOR_CURRENCIES.map(code=>({code,rate:1/(getRate('USD',code)||1)}));
+  const max=Math.max(...pairs.map(p=>p.rate));
+  grid.innerHTML=pairs.sort((a,b)=>b.rate-a.rate).map(({code,rate})=>{
+    const pct=(rate/max*100).toFixed(1);
+    const c=CURRENCIES[code]||{flag:'🏳'};
+    return `<div class="strength-row">
+      <div class="strength-flag-code">${c.flag} ${code}</div>
+      <div class="strength-bar-wrap"><div class="strength-bar" style="width:${pct}%"></div></div>
+      <div class="strength-val">${fmtNum(rate,4)}</div>
+    </div>`;
+  }).join('');
+}
+ 
+/* ═══════════════════════════════════════════════
+   LEARN — CAROUSEL
+═══════════════════════════════════════════════ */
+function renderCarousel(){
+  const slides=document.getElementById('carouselSlides');
+  const dots=document.getElementById('carouselDots');
+  slides.innerHTML=DID_YOU_KNOW.map(f=>`<div class="carousel-slide">${f}</div>`).join('');
+  dots.innerHTML=DID_YOU_KNOW.map((_,i)=>`<button class="carousel-dot ${i===0?'active':''}" onclick="goSlide(${i})"></button>`).join('');
+  setInterval(()=>carouselNext(),6000);
+}
+function goSlide(i){
+  carouselIndex=i;
+  document.getElementById('carouselSlides').style.transform=`translateX(-${i*100}%)`;
+  document.querySelectorAll('.carousel-dot').forEach((d,j)=>d.classList.toggle('active',j===i));
+}
+function carouselNext(){goSlide((carouselIndex+1)%DID_YOU_KNOW.length);}
+function carouselPrev(){goSlide((carouselIndex-1+DID_YOU_KNOW.length)%DID_YOU_KNOW.length);}
+ 
+/* ═══════════════════════════════════════════════
+   LEARN — GLOSSARY
+═══════════════════════════════════════════════ */
+function renderGlossary(){
+  document.getElementById('glossaryGrid').innerHTML=GLOSSARY.map(g=>`
+    <div class="glossary-card">
+      <div class="glossary-term">${g.term}</div>
+      <div class="glossary-def">${g.def}</div>
+    </div>`).join('');
+}
+ 
+/* ═══════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════ */
+function showSection(name, btnEl){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  document.querySelectorAll('.nav-link,.sidebar-item').forEach(b=>b.classList.remove('active'));
+  if(btnEl){
+    btnEl.classList.add('active');
+    // mirror active in sidebar
+    document.querySelectorAll('.sidebar-item').forEach(b=>{if(b.getAttribute('onclick')?.includes("'"+name+"'"))b.classList.add('active');});
+    document.querySelectorAll('.nav-link').forEach(b=>{if(b.getAttribute('onclick')?.includes("'"+name+"'"))b.classList.add('active');});
+  }
+  if(name==='chart') loadChart();
+  if(name==='favorites') renderFavorites();
+  if(name==='learn') renderStrength();
+}
+ 
+function showLearnTab(name,btn){
+  document.querySelectorAll('.learn-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('lp-'+name).classList.add('active');
+  document.querySelectorAll('.learn-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='strength') renderStrength();
+}
+ 
+function toggleMenu(){
+  const h=document.getElementById('hamburger');
+  const m=document.getElementById('mobileMenu');
+  h.classList.toggle('open');
+  m.classList.toggle('open');
+}
+ 
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+function showToast(msg,type='info'){
+  const container=document.getElementById('toastContainer');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span>${type==='success'?'✅':type==='warning'?'⚠️':'ℹ️'}</span><span>${msg}</span>`;
+  container.appendChild(t);
+  setTimeout(()=>{t.classList.add('hiding');setTimeout(()=>t.remove(),300);},4000);
+}
+ 
+/* ═══════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════ */
+function fmtNum(n,dec=2){
+  if(isNaN(n)||n===null) return '—';
+  return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+ 
+// Keyboard shortcut: Enter to convert
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('sec-converter').classList.contains('active')) doConvert();
+});
+ 
+init();
+</script>
+</body>
+</html>
